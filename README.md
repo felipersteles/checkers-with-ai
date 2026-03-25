@@ -1,32 +1,62 @@
-# Checkers: A Classic Reborn in Pure JavaScript, HTML, and CSS
+# Checkers
 
-♟️ Relive the strategic thrill of Checkers in this meticulously crafted web implementation.
+A classic Checkers (Draughts) game built with pure **HTML**, **CSS**, and **JavaScript** — no frameworks, no dependencies.
 
-No external libraries or frameworks required - just the core pillars of web development!
+## Features
 
-## Key Features:
+- **Two game modes** — local multiplayer or vs AI
+- **Three difficulty levels** — Easy, Medium, Hard
+- **King promotion** — pieces that reach the back row become Kings
+- **Multi-jump captures** — chain captures in a single turn
+- **Player names** — customizable before each game
+- **Resign button** — concede at any point
+- **Responsive layout** — works on desktop and mobile
 
-- Faithful Gameplay: Experience authentic checkers mechanics, including captures, kinging, and multiple jumps.
-- Intuitive Interface: Drag and drop pieces seamlessly with smooth animations and user-friendly interactions.
-- Responsive Design: Enjoy flawless gameplay across devices, from desktops to mobile screens.
-- Clean and Readable Code: Dive into well-structured, easy-to-understand code, perfect for learning or teaching web development.
-- Open-Source Collaboration: Contribute, customize, or utilize the project as a valuable learning resource.
+## Getting Started
 
-## Built with:
+```bash
+git clone https://github.com/felipersteles/learning-checkers.git
+cd learning-checkers
+open index.html
+```
 
-- JavaScript: Handles game logic, piece movements, and dynamic interactions.
-- HTML: Constructs the board structure and visual elements.
-- CSS: Styles the game with a visually appealing and classic checkers aesthetic.
+No build step required. Just open `index.html` in any modern browser.
 
-## Get Started:
+## Project Structure
 
-1. Clone or download the repository.
-2. Open `index.html` in your browser.
-3. Challenge a friend or test your skills against yourself!
+```
+.
+├── index.html      # Markup and layout
+├── style.css       # Styles and animations
+├── script.js       # Core game logic and board rendering
+├── game.js         # Game state management
+├── machine.js      # AI opponent logic
+├── menu.js         # Menu and mode selection
+└── assets/
+    └── favicon.ico
+```
 
-##
-## Contributions Welcome:
+## How to Play
 
-We eagerly invite pull requests for bug fixes, feature enhancements, and creative ideas to further enrich the project.
-##
-## Join the checkers revolution and rediscover this timeless classic in its pure web form!
+1. Choose **Two Players** for local multiplayer or **vs Machine** for AI
+2. (Optional) Set player names and difficulty
+3. Click **Start Game**
+4. Click a piece to select it — valid moves highlight in green
+5. Click a highlighted square to move
+6. Capture all enemy pieces or leave them with no moves to win
+
+## Rules
+
+- Pieces move diagonally forward one square at a time
+- Capture by jumping over an enemy piece to an empty square behind it
+- Multiple captures in one turn are allowed
+- Reach the opponent's back row to promote to a **King**
+- Kings can move and capture in all four diagonal directions
+
+## Contributing
+
+Pull requests are welcome. Feel free to open an issue for bugs, feature ideas, or improvements.
+
+## License
+
+MIT

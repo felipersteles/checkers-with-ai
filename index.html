@@ -2,12 +2,172 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Primary Meta -->
+    <title>Checkers — Classic Board Game</title>
+    <meta name="description" content="Play Checkers online — local multiplayer or vs AI. Built with pure HTML, CSS and JavaScript. No frameworks, no installs." />
+    <meta name="author" content="Felipe Teles" />
+    <meta name="keywords" content="checkers, draughts, board game, javascript game, two players, AI opponent" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Checkers — Classic Board Game" />
+    <meta property="og:description" content="Play Checkers online — local multiplayer or vs AI. Built with pure HTML, CSS and JavaScript." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="assets/favicon.ico" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Checkers — Classic Board Game" />
+    <meta name="twitter:description" content="Play Checkers online — local multiplayer or vs AI. Built with pure HTML, CSS and JavaScript." />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+    <link rel="shortcut icon" href="assets/favicon.ico" />
+
     <link rel="stylesheet" href="style.css" />
-    <title>Checkers game</title>
   </head>
   <body>
-    <table id="board"></table>
-    <button id="generate">Start the game</button>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-label">made by</span>
+        <a class="brand-name" href="https://github.com/felipersteles" target="_blank">Teles</a>
+      </div>
+
+      <nav class="tabs">
+        <button class="tab active" data-tab="tips">Tips</button>
+        <button class="tab" data-tab="rules">Rules</button>
+        <button class="tab" data-tab="controls">Controls</button>
+      </nav>
+
+      <div class="tab-content" id="tips">
+        <ul class="tip-list">
+          <li>Control the center of the board early on.</li>
+          <li>Keep your back row intact to prevent your opponent from getting kings.</li>
+          <li>Move in groups — lone pieces are easy targets.</li>
+          <li>Force your opponent into double jumps you can block.</li>
+          <li>Trade pieces when you're ahead; avoid trades when behind.</li>
+          <li>Green squares show where a selected piece can move.</li>
+        </ul>
+      </div>
+
+      <div class="tab-content hidden" id="rules">
+        <ul class="tip-list">
+          <li>Each player starts with 12 pieces on dark squares.</li>
+          <li>Pieces move diagonally forward one square at a time.</li>
+          <li>Captures are made by jumping over an enemy piece to an empty square.</li>
+          <li>Multiple captures in one turn are allowed and encouraged.</li>
+          <li>Reach the opponent's back row to become a <strong>King</strong>.</li>
+          <li>Kings can move and capture both forward and backward.</li>
+          <li>The player who captures all enemy pieces wins.</li>
+          <li>If a player has no moves left, the player with more pieces wins.</li>
+        </ul>
+      </div>
+
+      <div class="tab-content hidden" id="controls">
+        <ul class="tip-list">
+          <li><kbd>Click</kbd> a piece to select it.</li>
+          <li>Green squares highlight valid moves.</li>
+          <li><kbd>Click</kbd> a green square to move there.</li>
+          <li>Turns alternate between White and Black.</li>
+          <li>Press <kbd>New Game</kbd> to reset the board.</li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Game area -->
+    <main class="game">
+
+      <!-- Menu screen -->
+      <div id="menu">
+        <div class="menu-header">
+          <h1 class="menu-title">Checkers</h1>
+          <p class="menu-subtitle">Choose a game mode to start</p>
+        </div>
+
+        <div class="mode-cards">
+          <button class="mode-card active" data-mode="multiplayer">
+            <span class="mode-icon">👥</span>
+            <span class="mode-name">Two Players</span>
+            <span class="mode-desc">Local multiplayer</span>
+          </button>
+          <button class="mode-card" data-mode="machine">
+            <span class="mode-icon">🤖</span>
+            <span class="mode-name">vs Machine</span>
+            <span class="mode-desc">Play against AI</span>
+          </button>
+        </div>
+
+        <div class="difficulty-select hidden" id="difficulty-group">
+          <label>Difficulty</label>
+          <div class="difficulty-options">
+            <button class="diff-btn" data-diff="easy">Easy</button>
+            <button class="diff-btn active" data-diff="medium">Medium</button>
+            <button class="diff-btn" data-diff="hard">Hard</button>
+          </div>
+        </div>
+
+        <div class="player-inputs">
+          <div class="input-group">
+            <label for="player-white">White player</label>
+            <input type="text" id="player-white" placeholder="Player 1" maxlength="20" />
+          </div>
+          <div class="input-group" id="black-player-group">
+            <label for="player-black">Black player</label>
+            <input type="text" id="player-black" placeholder="Player 2" maxlength="20" />
+          </div>
+        </div>
+
+        <button id="start-btn">Start Game</button>
+      </div>
+
+      <!-- Game container (hidden until menu is submitted) -->
+      <div id="game-container" class="hidden">
+
+        <div class="board-wrapper">
+
+          <!-- Left: Player 1 (white) -->
+          <div class="player-panel" id="panel-white">
+            <span class="panel-piece">⬜</span>
+            <span class="panel-name" id="name-white">Player 1</span>
+            <span class="panel-score" id="score-white">0</span>
+            <div class="turn-info">
+              <span class="turn-label">Your turn</span>
+              <button class="resign-btn" id="resign-white">Resign</button>
+            </div>
+          </div>
+
+          <!-- Center: Board + win banner -->
+          <div class="board-area">
+            <div id="win-banner" class="hidden">
+              <span id="win-text"></span>
+            </div>
+            <table id="board"></table>
+          </div>
+
+          <!-- Right: Player 2 (black) -->
+          <div class="player-panel" id="panel-black">
+            <span class="panel-piece">⬛</span>
+            <span class="panel-name" id="name-black">Player 2</span>
+            <span class="panel-score" id="score-black">0</span>
+            <div class="turn-info">
+              <span class="turn-label">Your turn</span>
+              <button class="resign-btn" id="resign-black">Resign</button>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="game-actions">
+          <button id="back-btn">← Menu</button>
+          <button id="generate">New Game</button>
+        </div>
+
+      </div>
+
+    </main>
+
   </body>
   <script src="script.js"></script>
 </html>
