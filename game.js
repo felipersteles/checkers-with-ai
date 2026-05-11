@@ -42,7 +42,48 @@ class MoveEngine {
   static _empty(sq) { return sq && sq.firstChild === null; }
 
   static _hasEnemy(sq, ownColor) {
-    return sq && sq.firstChild && sq.firstChild.classList.value !== ownColor;
+    return sq && sq.firstChild && !sq.firstChild.classList.contains(ownColor);
+  }
+
+  static _canCapture(sq, ownColor, isQueenPiece, rules = null) {
+    if (!MoveEngine._hasEnemy(sq, ownColor)) return false;
+    return isQueenPiece || MoveEngine._rules(rules).menCanCaptureKings || sq.firstChild.id !== 'dama';
+  }
+
+  static _rules(rules) {
+    if (typeof checkersRules !== 'function') return rules || {};
+    if (typeof rules === 'string') return checkersRules(rules);
+    return checkersRules(rules && rules.version);
+  }
+
+  static _moveWeight(move) {
+    return {
+      captures: move.eatSquares.length,
+      queenCaptures: move.eatSquares.filter(sq => sq.firstChild && sq.firstChild.id === 'dama').length,
+    };
+  }
+
+  static _maxWeight(moves) {
+    return moves.reduce((best, move) => {
+      const weight = MoveEngine._moveWeight(move);
+      if (weight.captures > best.captures) return weight;
+      if (weight.captures === best.captures && weight.queenCaptures > best.queenCaptures) return weight;
+      return best;
+    }, { captures: 0, queenCaptures: 0 });
+  }
+
+  static _filterPieceMoves(moves, isQueenPiece, rules) {
+    const activeRules = MoveEngine._rules(rules);
+    const captures = moves.filter(move => move.eatSquares.length > 0);
+
+    if (!captures.length) return moves;
+    if (!activeRules.strictCapturePriority) return captures;
+
+    const max = MoveEngine._maxWeight(captures);
+    return captures.filter(move => {
+      const weight = MoveEngine._moveWeight(move);
+      return weight.captures === max.captures && weight.queenCaptures === max.queenCaptures;
+    }).filter(move => isQueenPiece || max.captures > 0);
   }
 
   /**
@@ -54,8 +95,9 @@ class MoveEngine {
    * eatChain    — td[] already consumed in the current capture chain
    * isChained   — true when called recursively inside a capture chain
    */
-  static forPiece(pieceSquare, isWhitePiece, isQueenPiece, eatChain = [], isChained = false) {
+  static forPiece(pieceSquare, isWhitePiece, isQueenPiece, eatChain = [], isChained = false, rules = null) {
     const results = [];
+    const activeRules = MoveEngine._rules(rules);
     const posAttr = pieceSquare.getAttribute('pos');
     if (!posAttr) return results;
 
@@ -68,80 +110,70 @@ class MoveEngine {
     const dirs = isQueenPiece ? allDirs : fwdDirs;
 
     dirs.forEach(step => {
-      if (isQueenPiece) {
-        let cur = pos;
-        let enemySq = null;
+      const nPos = step(pos);
+      const nSq = MoveEngine._sq(nPos);
 
-        while (true) {
-          cur = step(cur);
-          const sq = MoveEngine._sq(cur);
-          if (!sq) break;
-          if (eatChain.includes(sq)) continue;
+      if (MoveEngine._empty(nSq) && !isChained) {
+        results.push(new Movement(nSq, []));
+      }
 
-          if (MoveEngine._empty(sq)) {
-            if (enemySq === null) {
-              // Simple slide — only allowed when not mid-chain
-              if (!isChained) results.push(new Movement(sq, []));
-            } else {
-              // Landing square after a jump
-              const chain = [...eatChain, enemySq];
-              const alreadyAdded = results.find(
-                m => m.toSquare === sq && m.eatSquares.length === chain.length
-              );
-              if (!alreadyAdded) {
-                results.push(new Movement(sq, chain));
-                // Continue looking for further jumps from this landing
-                const further = MoveEngine.forPiece(sq, isWhitePiece, true, chain, true);
-                further.forEach(m => {
-                  if (!results.find(r => r.toSquare === m.toSquare && r.eatSquares.length === m.eatSquares.length))
-                    results.push(m);
-                });
-              }
-            }
-          } else if (MoveEngine._hasEnemy(sq, color)) {
-            if (enemySq !== null) break; // Two enemies in row — blocked
-            enemySq = sq;
-          } else {
-            break; // Friendly piece — blocked
-          }
-        }
-      } else {
-        // Regular piece: single-step move
-        const nPos = step(pos);
-        const nSq = MoveEngine._sq(nPos);
+      if (MoveEngine._canCapture(nSq, color, isQueenPiece, activeRules) && !eatChain.includes(nSq)) {
+        const jSq = MoveEngine._sq(step(nPos));
+        if (MoveEngine._empty(jSq)) {
+          const chain = [...eatChain, nSq];
+          const further = MoveEngine.forPiece(jSq, isWhitePiece, isQueenPiece, chain, true, activeRules);
+          const continued = further.filter(m => m.eatSquares.length > chain.length);
 
-        if (MoveEngine._empty(nSq) && !isChained) {
-          results.push(new Movement(nSq, []));
-        }
-
-        if (MoveEngine._hasEnemy(nSq, color) && !eatChain.includes(nSq)) {
-          const jSq = MoveEngine._sq(step(nPos));
-          if (MoveEngine._empty(jSq)) {
-            const chain = [...eatChain, nSq];
-            results.push(new Movement(jSq, chain));
-            // Continue looking for further jumps from this landing
-            const further = MoveEngine.forPiece(jSq, isWhitePiece, false, chain, true);
-            further.forEach(m => {
+          if (continued.length) {
+            continued.forEach(m => {
               if (!results.find(r => r.toSquare === m.toSquare && r.eatSquares.length === m.eatSquares.length))
                 results.push(m);
             });
+            return;
           }
+
+          if (!results.find(r => r.toSquare === jSq && r.eatSquares.length === chain.length)) {
+            results.push(new Movement(jSq, chain));
+          }
+          further.forEach(m => {
+            if (!results.find(r => r.toSquare === m.toSquare && r.eatSquares.length === m.eatSquares.length))
+              results.push(m);
+          });
         }
       }
     });
 
-    return results;
+    return MoveEngine._filterPieceMoves(results, isQueenPiece, activeRules);
+  }
+
+  static forColor(isWhitePiece, rules = null) {
+    const activeRules = MoveEngine._rules(rules);
+    const color = isWhitePiece ? 'white' : 'black';
+    const candidates = [];
+    const pieces = document.querySelectorAll(`#peca.${color}, #dama.${color}`);
+
+    pieces.forEach(piece => {
+      const isQueenPiece = piece.id === 'dama';
+      const moves = MoveEngine.forPiece(piece.parentNode, isWhitePiece, isQueenPiece, [], false, activeRules);
+      moves.forEach(move => candidates.push({ piece, isQueenPiece, move }));
+    });
+
+    const captures = candidates.filter(candidate => candidate.move.eatSquares.length > 0);
+    if (!captures.length) return candidates;
+    if (!activeRules.strictCapturePriority) return captures;
+
+    const maxCaptures = Math.max(...captures.map(candidate => candidate.move.eatSquares.length));
+    let filtered = captures.filter(candidate => candidate.move.eatSquares.length === maxCaptures);
+    const hasQueenCapture = filtered.some(candidate => candidate.isQueenPiece);
+    if (hasQueenCapture) filtered = filtered.filter(candidate => candidate.isQueenPiece);
+
+    const maxQueenCaptures = Math.max(...filtered.map(candidate => MoveEngine._moveWeight(candidate.move).queenCaptures));
+    return filtered.filter(candidate => MoveEngine._moveWeight(candidate.move).queenCaptures === maxQueenCaptures);
   }
 
   /** Returns true if the given side has at least one legal move. */
-  static hasAnyMoves(isWhitePiece) {
-    const color = isWhitePiece ? 'white' : 'black';
-    const pieces = document.querySelectorAll(`#peca.${color}, #dama.${color}`);
-    for (const p of pieces) {
-      if (MoveEngine.forPiece(p.parentNode, isWhitePiece, p.id === 'dama').length > 0)
-        return true;
-    }
-    return false;
+  static hasAnyMoves(isWhitePiece, rules = null) {
+    return MoveEngine.forColor(isWhitePiece, rules).length > 0;
   }
 
   /** Counts pieces of a given color currently on the board. */
@@ -159,6 +191,7 @@ class CheckersGame {
     this._selectedPiece = null;  // currently selected piece element
     this._highlighted = [];      // Movement[] shown in green
     this.whiteTurn = true;
+    this._rules = MoveEngine._rules('italian');
 
     this._onMoveComplete = null; // (whiteTurn: boolean) => void
     this._onGameOver = null;     // (winnerColor: string) => void
@@ -172,8 +205,9 @@ class CheckersGame {
 
   // ── Initialisation ─────────────────────────────────────────────────────────
 
-  init(pieces) {
-    this.whiteTurn = true;
+  init(pieces, version = 'italian') {
+    this._rules = MoveEngine._rules(version);
+    this.whiteTurn = this._rules.whiteStarts;
     this._selectedPiece = null;
     this._highlighted = [];
     this._generateGrid();
@@ -229,7 +263,10 @@ class CheckersGame {
       // Select this piece
       this._clearHighlight();
       this._selectedPiece = el;
-      this._highlighted = MoveEngine.forPiece(el.parentNode, isWhiteEl, el.id === 'dama');
+      const legalMoves = MoveEngine.forColor(this.whiteTurn, this._rules)
+        .filter(candidate => candidate.piece === el)
+        .map(candidate => candidate.move);
+      this._highlighted = legalMoves;
       this._drawHighlight();
       return;
     }
@@ -269,7 +306,7 @@ class CheckersGame {
     this.whiteTurn = !this.whiteTurn;
 
     // Check no-moves win condition
-    if (!MoveEngine.hasAnyMoves(this.whiteTurn)) {
+    if (!MoveEngine.hasAnyMoves(this.whiteTurn, this._rules)) {
       const wCount = MoveEngine.countPieces('white');
       const bCount = MoveEngine.countPieces('black');
       const noMoveWinner = wCount >= bCount ? 'white' : 'black';
@@ -290,7 +327,9 @@ class CheckersGame {
 
     const pieceEl = srcSq.firstChild;
     const isWhitePiece = pieceEl.classList.contains('white');
-    const moves = MoveEngine.forPiece(srcSq, isWhitePiece, pieceEl.id === 'dama');
+    const moves = MoveEngine.forColor(isWhitePiece, this._rules)
+      .filter(candidate => candidate.piece === pieceEl)
+      .map(candidate => candidate.move);
 
     // Match by position attribute string — avoids reference-equality pitfalls
     const match = moves.find(m => m.toSquare.getAttribute('pos') === `${toX},${toY}`);

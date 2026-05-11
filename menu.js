@@ -5,12 +5,27 @@
 
 class MenuController {
   static STORAGE_KEY = 'checkers_config';
+  static RULE_TEXT = {
+    italian: {
+      start: 'White starts.',
+      menKings: 'Men cannot capture Kings.',
+      captureChoice: 'When multiple captures are available, the longest capture is mandatory.',
+    },
+    english: {
+      start: 'Black starts.',
+      menKings: 'Men can capture Kings.',
+      captureChoice: 'When captures are available, any capture is valid.',
+    },
+  };
 
   constructor() {
     // ── DOM refs ──────────────────────────────────────────────────────────────
     this._menuEl         = document.getElementById('menu');
     this._gameEl         = document.getElementById('game-container');
+    this._sidebarBtn     = document.getElementById('sidebar-toggle');
+    this._sidebarOverlay = document.getElementById('sidebar-backdrop');
     this._modeCards      = document.querySelectorAll('.mode-card');
+    this._versionBtns    = document.querySelectorAll('.version-btn');
     this._blackGroupEl   = document.getElementById('black-player-group');
     this._diffGroupEl    = document.getElementById('difficulty-group');
     this._diffBtns       = document.querySelectorAll('.diff-btn');
@@ -29,10 +44,14 @@ class MenuController {
     this._winBannerEl    = document.getElementById('win-banner');
     this._winTextEl      = document.getElementById('win-text');
     this._generateBtn    = document.getElementById('generate');
+    this._ruleStartEl    = document.getElementById('rule-start');
+    this._ruleMenKingsEl = document.getElementById('rule-men-kings');
+    this._ruleCaptureEl  = document.getElementById('rule-capture-choice');
 
     // ── In-memory config (pre-game) ───────────────────────────────────────────
     this._config = {
       mode: 'multiplayer',
+      version: 'italian',
       difficulty: 'medium',
       players: { white: 'Player 1', black: 'Player 2' },
       scores: { white: 0, black: 0 },
@@ -55,12 +74,15 @@ class MenuController {
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   init() {
+    this._updateRulesText();
     this._bindModeCards();
+    this._bindVersionBtns();
     this._bindDifficultyBtns();
     this._bindStartBtn();
     this._bindBackBtn();
     this._bindResignBtns();
     this._bindNewGameBtn();
+    this._bindSidebar();
     this._bindTabs();
   }
 
@@ -133,6 +155,25 @@ class MenuController {
     });
   }
 
+  _bindVersionBtns() {
+    this._versionBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        this._versionBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this._config.version = btn.dataset.version;
+        this._updateRulesText();
+      });
+    });
+  }
+
+  _updateRulesText() {
+    const rules = MenuController.RULE_TEXT[this._config.version] || MenuController.RULE_TEXT.italian;
+
+    if (this._ruleStartEl) this._ruleStartEl.textContent = rules.start;
+    if (this._ruleMenKingsEl) this._ruleMenKingsEl.textContent = rules.menKings;
+    if (this._ruleCaptureEl) this._ruleCaptureEl.textContent = rules.captureChoice;
+  }
+
   _bindDifficultyBtns() {
     this._diffBtns.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -179,6 +220,30 @@ class MenuController {
     });
   }
 
+  _bindSidebar() {
+    if (!this._sidebarBtn || !this._sidebarOverlay) return;
+
+    this._sidebarBtn.addEventListener('click', () => {
+      this._setSidebarOpen(!document.body.classList.contains('sidebar-open'));
+    });
+
+    this._sidebarOverlay.addEventListener('click', () => this._setSidebarOpen(false));
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && document.body.classList.contains('sidebar-open'))
+        this._setSidebarOpen(false);
+    });
+  }
+
+  _setSidebarOpen(open) {
+    document.body.classList.toggle('sidebar-open', open);
+    if (!this._sidebarBtn) return;
+
+    this._sidebarBtn.setAttribute('aria-expanded', String(open));
+    this._sidebarBtn.setAttribute('aria-label', open ? 'Close sidebar' : 'Open sidebar');
+    this._sidebarBtn.textContent = open ? '×' : '☰';
+  }
+
   _bindTabs() {
     document.querySelectorAll('.tab').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -186,6 +251,7 @@ class MenuController {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
         btn.classList.add('active');
         document.getElementById(btn.dataset.tab).classList.remove('hidden');
+        this._setSidebarOpen(false);
       });
     });
   }
