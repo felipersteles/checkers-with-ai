@@ -27,12 +27,13 @@ No build step required. Just open `index.html` in any modern browser.
 
 ```
 .
-├── index.html      # Markup and layout
-├── style.css       # Styles and animations
-├── script.js       # Core game logic and board rendering
-├── game.js         # Game state management
-├── machine.js      # AI opponent logic
-├── menu.js         # Menu and mode selection
+├── index.html              # Markup and layout
+├── style.css               # Styles and animations
+├── script.js               # Core game logic and board rendering
+├── game.js                 # Game state management
+├── machine.js              # AI opponent logic
+├── menu.js                 # Menu and mode selection
+├── checker-rules.test.js   # Rule regression tests
 └── favicon.ico
 ```
 
@@ -55,6 +56,16 @@ No build step required. Just open `index.html` in any modern browser.
 - Kings can move and capture in all four diagonal directions
 - **Italian** — White starts, men cannot capture Kings, and the longest capture is mandatory
 - **English** — Black starts, men can capture Kings, and any available capture is valid
+
+## Rule Tests
+
+`checker-rules.test.js` is a small Node.js regression test for the Italian and English rule engines. It is not used by the browser game at runtime, but it helps verify that future changes do not break captures, Kings, mandatory captures, or AI move generation.
+
+Run it with:
+
+```bash
+node checker-rules.test.js
+```
 
 ## Contributing
 
