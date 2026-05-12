@@ -55,16 +55,54 @@ class LogicalMoveEngine {
     (x, y) => [x + 1, y + 1], // se
   ];
 
-  static getAllMoves(board, color) {
+  static _canCapture(cell, opponentColor, isQueen, rules = null) {
+    if (!cell || cell.color !== opponentColor) return false;
+    return isQueen || LogicalMoveEngine._rules(rules).menCanCaptureKings || !cell.isQueen;
+  }
+
+  static _rules(rules) {
+    if (typeof checkersRules !== 'function') return rules || {};
+    if (typeof rules === 'string') return checkersRules(rules);
+    return checkersRules(rules && rules.version);
+  }
+
+  static _moveWeight(move, board) {
+    return {
+      captures: move.eatPositions.length,
+      queenCaptures: move.eatPositions.filter(pos => {
+        const captured = board.get(pos.x, pos.y);
+        return captured && captured.isQueen;
+      }).length,
+    };
+  }
+
+  static _filterMoves(moves, board, rules) {
+    const activeRules = LogicalMoveEngine._rules(rules);
+    const captures = moves.filter(move => move.eatPositions.length > 0);
+
+    if (!captures.length) return moves;
+    if (!activeRules.strictCapturePriority) return captures;
+
+    const maxCaptures = Math.max(...captures.map(move => move.eatPositions.length));
+    let filtered = captures.filter(move => move.eatPositions.length === maxCaptures);
+    const hasQueenCapture = filtered.some(move => board.get(move.fromX, move.fromY).isQueen);
+    if (hasQueenCapture) filtered = filtered.filter(move => board.get(move.fromX, move.fromY).isQueen);
+
+    const maxQueenCaptures = Math.max(...filtered.map(move => LogicalMoveEngine._moveWeight(move, board).queenCaptures));
+    return filtered.filter(move => LogicalMoveEngine._moveWeight(move, board).queenCaptures === maxQueenCaptures);
+  }
+
+  static getAllMoves(board, color, rules = null) {
+    const activeRules = LogicalMoveEngine._rules(rules);
     const moves = [];
     for (let y = 0; y < 8; y++) {
       for (let x = 0; x < 8; x++) {
         const cell = board.get(x, y);
         if (!cell || cell.color !== color) continue;
-        LogicalMoveEngine._collect(board, x, y, x, y, cell.isQueen, color, [], moves, false);
+        LogicalMoveEngine._collect(board, x, y, x, y, cell.isQueen, color, [], moves, false, activeRules);
       }
     }
-    return moves;
+    return LogicalMoveEngine._filterMoves(moves, board, activeRules);
   }
 
   /**
@@ -72,7 +110,8 @@ class LogicalMoveEngine {
    * curX/curY   — current position used to scan neighbours
    * inChain     — true when inside a capture chain (suppresses simple slides)
    */
-  static _collect(board, fromX, fromY, curX, curY, isQueen, color, eatChain, moves, inChain) {
+  static _collect(board, fromX, fromY, curX, curY, isQueen, color, eatChain, moves, inChain, rules = null) {
+    const activeRules = LogicalMoveEngine._rules(rules);
     const opp = color === 'white' ? 'black' : 'white';
     const fwdDirs = color === 'white'
       ? [LogicalMoveEngine._DIRS[0], LogicalMoveEngine._DIRS[1]]
@@ -80,49 +119,25 @@ class LogicalMoveEngine {
     const dirs = isQueen ? LogicalMoveEngine._DIRS : fwdDirs;
 
     dirs.forEach(step => {
-      if (isQueen) {
-        let cx = curX, cy = curY, enemyPos = null;
+      const [nx, ny] = step(curX, curY);
+      if (!LogicalMoveEngine._inBounds(nx, ny)) return;
 
-        while (true) {
-          [cx, cy] = step(cx, cy);
-          if (!LogicalMoveEngine._inBounds(cx, cy)) break;
-          if (eatChain.some(e => e.x === cx && e.y === cy)) continue;
+      const cell = board.get(nx, ny);
+      if (!cell && !inChain) {
+        moves.push({ fromX, fromY, toX: nx, toY: ny, eatPositions: [] });
+      }
 
-          const cell = board.get(cx, cy);
+      const alreadyEaten = eatChain.some(e => e.x === nx && e.y === ny);
+      if (LogicalMoveEngine._canCapture(cell, opp, isQueen, activeRules) && !alreadyEaten) {
+        const [jx, jy] = step(nx, ny);
+        if (LogicalMoveEngine._inBounds(jx, jy) && !board.get(jx, jy)) {
+          const chain = [...eatChain, { x: nx, y: ny }];
+          const before = moves.length;
+          LogicalMoveEngine._collect(board, fromX, fromY, jx, jy, isQueen, color, chain, moves, true, activeRules);
+          const hasContinuation = moves.slice(before).some(move => move.eatPositions.length > chain.length);
 
-          if (!cell) {
-            if (enemyPos === null) {
-              if (!inChain) moves.push({ fromX, fromY, toX: cx, toY: cy, eatPositions: [] });
-            } else {
-              const chain = [...eatChain, enemyPos];
-              if (!moves.find(m => m.toX === cx && m.toY === cy && m.eatPositions.length === chain.length)) {
-                moves.push({ fromX, fromY, toX: cx, toY: cy, eatPositions: chain });
-                LogicalMoveEngine._collect(board, fromX, fromY, cx, cy, true, color, chain, moves, true);
-              }
-            }
-          } else if (cell.color === opp) {
-            if (enemyPos !== null) break;
-            enemyPos = { x: cx, y: cy };
-          } else {
-            break;
-          }
-        }
-      } else {
-        const [nx, ny] = step(curX, curY);
-        if (!LogicalMoveEngine._inBounds(nx, ny)) return;
-
-        const cell = board.get(nx, ny);
-        if (!cell && !inChain) {
-          moves.push({ fromX, fromY, toX: nx, toY: ny, eatPositions: [] });
-        }
-
-        const alreadyEaten = eatChain.some(e => e.x === nx && e.y === ny);
-        if (cell && cell.color === opp && !alreadyEaten) {
-          const [jx, jy] = step(nx, ny);
-          if (LogicalMoveEngine._inBounds(jx, jy) && !board.get(jx, jy)) {
-            const chain = [...eatChain, { x: nx, y: ny }];
+          if (!hasContinuation) {
             moves.push({ fromX, fromY, toX: jx, toY: jy, eatPositions: chain });
-            LogicalMoveEngine._collect(board, fromX, fromY, jx, jy, false, color, chain, moves, true);
           }
         }
       }
@@ -135,8 +150,9 @@ class LogicalMoveEngine {
 class MachinePlayer {
   static DEPTHS = { easy: 1, medium: 3, hard: 5 };
 
-  constructor(difficulty = 'medium') {
+  constructor(difficulty = 'medium', version = 'italian') {
     this.difficulty = difficulty;
+    this.rules = LogicalMoveEngine._rules(version);
   }
 
   /**
@@ -175,7 +191,7 @@ class MachinePlayer {
     }
 
     const opp = moveColor === 'white' ? 'black' : 'white';
-    const moves = LogicalMoveEngine.getAllMoves(board, moveColor);
+    const moves = LogicalMoveEngine.getAllMoves(board, moveColor, this.rules);
     if (!moves.length) return this._heuristic(board, machineColor);
 
     if (isMax) {

@@ -14,6 +14,11 @@ body, html {
 
 /* ── Layout ── */
 
+.sidebar-toggle,
+.sidebar-backdrop {
+  display: none;
+}
+
 .sidebar {
   width: 260px;
   min-width: 260px;
@@ -242,8 +247,9 @@ kbd {
   letter-spacing: 0.04em;
 }
 
-/* Difficulty selector */
+/* Version / difficulty selectors */
 
+.version-select,
 .difficulty-select {
   display: flex;
   flex-direction: column;
@@ -251,6 +257,7 @@ kbd {
   width: 100%;
 }
 
+.version-select label,
 .difficulty-select label {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.5);
@@ -258,11 +265,13 @@ kbd {
   text-transform: uppercase;
 }
 
+.version-options,
 .difficulty-options {
   display: flex;
   gap: 8px;
 }
 
+.version-btn,
 .diff-btn {
   flex: 1;
   padding: 8px 0;
@@ -275,12 +284,19 @@ kbd {
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
+.version-btn {
+  padding: 7px 0;
+  font-size: 12px;
+}
+
+.version-btn:hover,
 .diff-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.2);
   color: rgba(255, 255, 255, 0.9);
 }
 
+.version-btn.active,
 .diff-btn.active {
   border-color: #e07b39;
   background: rgba(224, 123, 57, 0.12);
@@ -654,4 +670,248 @@ h1, h2, h3, h6 {
   display: flex;
   flex-direction: column;
   padding: 1%;
+}
+
+@media (max-width: 720px) {
+  body, html {
+    min-height: 100%;
+  }
+
+  body {
+    display: block;
+    --sidebar-mobile-width: min(82vw, 300px);
+  }
+
+  .sidebar-toggle {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 40;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: rgba(18, 18, 42, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    font-family: Arial, sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  }
+
+  body.sidebar-open .sidebar-toggle {
+    left: calc(var(--sidebar-mobile-width) - 54px);
+    background: rgba(18, 18, 42, 0.98);
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: block;
+    background: rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 30;
+    width: var(--sidebar-mobile-width);
+    min-width: 0;
+    transform: translateX(-100%);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.18s ease;
+    box-shadow: 12px 0 28px rgba(0, 0, 0, 0.35);
+  }
+
+  body.sidebar-open .sidebar {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  body.sidebar-open .sidebar-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .game {
+    min-height: 100%;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 64px 12px 12px;
+  }
+
+  #menu {
+    max-width: none;
+    gap: 20px;
+  }
+
+  .menu-title {
+    font-size: clamp(36px, 11vw, 48px);
+  }
+
+  .mode-cards,
+  .version-options,
+  .difficulty-options,
+  .player-inputs {
+    gap: 10px;
+  }
+
+  #game-container {
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+    min-height: 100%;
+  }
+
+  .board-wrapper {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "white black"
+      "board board";
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+  }
+
+  #panel-white {
+    grid-area: white;
+  }
+
+  #panel-black {
+    grid-area: black;
+  }
+
+  .board-area {
+    grid-area: board;
+    align-items: center;
+    width: 100%;
+  }
+
+  .player-panel {
+    width: auto;
+    min-width: 0;
+    min-height: 76px;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 10px;
+  }
+
+  .panel-piece {
+    flex: 0 0 auto;
+    font-size: 20px;
+  }
+
+  .panel-name {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-break: normal;
+  }
+
+  .panel-score {
+    flex: 0 0 auto;
+    font-size: 30px;
+  }
+
+  .turn-info {
+    flex: 0 0 auto;
+    align-items: flex-end;
+    gap: 4px;
+    margin-top: 0;
+  }
+
+  .turn-label {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  .resign-btn {
+    padding: 4px 8px;
+    font-size: 9px;
+  }
+
+  #board {
+    --board-size: clamp(220px, min(calc(100vw - 24px), calc(100vh - 240px)), 560px);
+    width: var(--board-size);
+    height: var(--board-size);
+    table-layout: fixed;
+  }
+
+  #board tr {
+    height: 12.5%;
+  }
+
+  tr td {
+    width: 12.5%;
+    height: 12.5%;
+  }
+
+  #peca, #dama {
+    border-width: 1px;
+  }
+
+  #dama {
+    font-size: clamp(14px, 5vw, 22px);
+  }
+
+  .game-actions {
+    gap: 10px;
+  }
+
+  #back-btn,
+  #generate {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 10px;
+    font-size: clamp(11px, 3.2vw, 14px);
+  }
+}
+
+@media (max-width: 420px) {
+  .game {
+    padding: 62px 10px 10px;
+  }
+
+  .mode-cards,
+  .version-options,
+  .difficulty-options,
+  .player-inputs,
+  .game-actions {
+    flex-direction: column;
+  }
+
+  .player-panel {
+    min-height: 64px;
+    padding: 8px;
+  }
+
+  .panel-piece {
+    display: none;
+  }
+
+  .panel-score {
+    font-size: 26px;
+  }
+
+  #board {
+    --board-size: clamp(180px, min(calc(100vw - 20px), calc(100vh - 220px)), 420px);
+  }
 }

@@ -17,6 +17,25 @@ const INITIAL_PIECES = [
   { posY: 7, posX: 4, color: 'white' }, { posY: 7, posX: 6, color: 'white' },
 ];
 
+const CHECKERS_RULES = {
+  italian: {
+    version: 'italian',
+    whiteStarts: true,
+    menCanCaptureKings: false,
+    strictCapturePriority: true,
+  },
+  english: {
+    version: 'english',
+    whiteStarts: false,
+    menCanCaptureKings: true,
+    strictCapturePriority: false,
+  },
+};
+
+function checkersRules(version) {
+  return CHECKERS_RULES[version] || CHECKERS_RULES.italian;
+}
+
 // ─── GameController ───────────────────────────────────────────────────────────
 // Wires together CheckersGame, MachinePlayer, and MenuController.
 // This is the single orchestration point — no game logic lives here.
@@ -57,9 +76,13 @@ class GameController {
 
   _startGame(cfg) {
     this._config  = { ...cfg };
-    this._machine = cfg.mode === 'machine' ? new MachinePlayer(cfg.difficulty) : null;
-    this._game.init(INITIAL_PIECES);
-    this._menu.updateTurn(true);
+    this._machine = cfg.mode === 'machine' ? new MachinePlayer(cfg.difficulty, cfg.version) : null;
+    this._game.init(INITIAL_PIECES, cfg.version);
+    this._menu.updateTurn(this._game.whiteTurn);
+
+    if (this._machine && !this._game.whiteTurn) {
+      setTimeout(() => this._triggerMachineMove(), 400);
+    }
   }
 
   _afterMove(whiteTurn) {

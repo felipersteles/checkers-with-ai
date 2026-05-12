@@ -2,6 +2,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'" />
 
     <!-- Primary Meta -->
     <title>Checkers — Classic Board Game</title>
@@ -9,27 +10,30 @@
     <meta name="author" content="Felipe Teles" />
     <meta name="keywords" content="checkers, draughts, board game, javascript game, two players, AI opponent" />
 
+    <link rel="icon" href="favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="96x96" href="favicon-96.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+
     <!-- Open Graph -->
     <meta property="og:title" content="Checkers — Classic Board Game" />
     <meta property="og:description" content="Play Checkers online — local multiplayer or vs AI. Built with pure HTML, CSS and JavaScript." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="assets/favicon.ico" />
+    <meta property="og:image" content="favicon-96.png" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Checkers — Classic Board Game" />
     <meta name="twitter:description" content="Play Checkers online — local multiplayer or vs AI. Built with pure HTML, CSS and JavaScript." />
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
-    <link rel="shortcut icon" href="assets/favicon.ico" />
-
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
 
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Open sidebar" aria-expanded="false" aria-controls="sidebar">☰</button>
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar" aria-label="Game help">
       <div class="sidebar-brand">
         <span class="brand-label">made by</span>
         <a class="brand-name" href="https://github.com/felipersteles" target="_blank">Teles</a>
@@ -55,9 +59,13 @@
       <div class="tab-content hidden" id="rules">
         <ul class="tip-list">
           <li>Each player starts with 12 pieces on dark squares.</li>
+          <li id="rule-start">White starts.</li>
           <li>Pieces move diagonally forward one square at a time.</li>
           <li>Captures are made by jumping over an enemy piece to an empty square.</li>
+          <li>Captures are mandatory when available.</li>
           <li>Multiple captures in one turn are allowed and encouraged.</li>
+          <li id="rule-men-kings">Men cannot capture Kings.</li>
+          <li id="rule-capture-choice">When multiple captures are available, the longest capture is mandatory.</li>
           <li>Reach the opponent's back row to become a <strong>King</strong>.</li>
           <li>Kings can move and capture both forward and backward.</li>
           <li>The player who captures all enemy pieces wins.</li>
@@ -97,6 +105,14 @@
             <span class="mode-name">vs Machine</span>
             <span class="mode-desc">Play against AI</span>
           </button>
+        </div>
+
+        <div class="version-select">
+          <label>Version</label>
+          <div class="version-options">
+            <button class="version-btn active" data-version="italian">🇮🇹 Italian</button>
+            <button class="version-btn" data-version="english">🇬🇧 English</button>
+          </div>
         </div>
 
         <div class="difficulty-select hidden" id="difficulty-group">
