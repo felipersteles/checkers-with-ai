@@ -5,18 +5,7 @@
 
 class MenuController {
   static STORAGE_KEY = 'checkers_config';
-  static RULE_TEXT = {
-    italian: {
-      start: 'White starts.',
-      menKings: 'Men cannot capture Kings.',
-      captureChoice: 'When multiple captures are available, the longest capture is mandatory.',
-    },
-    english: {
-      start: 'Black starts.',
-      menKings: 'Men can capture Kings.',
-      captureChoice: 'When captures are available, any capture is valid.',
-    },
-  };
+  static THEME_KEY = 'checkers_theme';
 
   constructor() {
     // ── DOM refs ──────────────────────────────────────────────────────────────
@@ -25,7 +14,7 @@ class MenuController {
     this._sidebarBtn     = document.getElementById('sidebar-toggle');
     this._sidebarOverlay = document.getElementById('sidebar-backdrop');
     this._modeCards      = document.querySelectorAll('.mode-card');
-    this._versionBtns    = document.querySelectorAll('.version-btn');
+    this._versionSelect  = document.getElementById('version-select');
     this._blackGroupEl   = document.getElementById('black-player-group');
     this._diffGroupEl    = document.getElementById('difficulty-group');
     this._diffBtns       = document.querySelectorAll('.diff-btn');
@@ -47,6 +36,8 @@ class MenuController {
     this._ruleStartEl    = document.getElementById('rule-start');
     this._ruleMenKingsEl = document.getElementById('rule-men-kings');
     this._ruleCaptureEl  = document.getElementById('rule-capture-choice');
+    this._themeToggleEl  = document.getElementById('theme-toggle');
+    this._langSelectEl   = document.getElementById('lang-select');
 
     // ── In-memory config (pre-game) ───────────────────────────────────────────
     this._config = {
@@ -74,9 +65,11 @@ class MenuController {
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   init() {
+    this._initTheme();
+    this._initLanguage();
     this._updateRulesText();
     this._bindModeCards();
-    this._bindVersionBtns();
+    this._bindVersionSelect();
     this._bindDifficultyBtns();
     this._bindStartBtn();
     this._bindBackBtn();
@@ -84,6 +77,8 @@ class MenuController {
     this._bindNewGameBtn();
     this._bindSidebar();
     this._bindTabs();
+    this._bindThemeToggle();
+    this._bindLanguageSelect();
   }
 
   // ── Public view methods ────────────────────────────────────────────────────
@@ -127,8 +122,9 @@ class MenuController {
     this._scoreWhiteEl.textContent = cfg.scores.white;
     this._scoreBlackEl.textContent = cfg.scores.black;
 
+    this._lastWinner = winnerColor;
     const name = winnerColor === 'white' ? cfg.players.white : cfg.players.black;
-    this._winTextEl.textContent = `${name} wins!`;
+    this._winTextEl.textContent = I18n.t('wins', { name });
     this._winBannerEl.classList.remove('hidden');
     this._panelWhiteEl.classList.remove('active');
     this._panelBlackEl.classList.remove('active');
@@ -155,19 +151,17 @@ class MenuController {
     });
   }
 
-  _bindVersionBtns() {
-    this._versionBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        this._versionBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        this._config.version = btn.dataset.version;
-        this._updateRulesText();
-      });
+  _bindVersionSelect() {
+    if (!this._versionSelect) return;
+    this._versionSelect.value = this._config.version;
+    this._versionSelect.addEventListener('change', () => {
+      this._config.version = this._versionSelect.value;
+      this._updateRulesText();
     });
   }
 
   _updateRulesText() {
-    const rules = MenuController.RULE_TEXT[this._config.version] || MenuController.RULE_TEXT.italian;
+    const rules = I18n.ruleText(this._config.version);
 
     if (this._ruleStartEl) this._ruleStartEl.textContent = rules.start;
     if (this._ruleMenKingsEl) this._ruleMenKingsEl.textContent = rules.menKings;
@@ -189,10 +183,10 @@ class MenuController {
       const whiteName = this._playerWhiteEl.value.trim();
       const blackName = this._playerBlackEl.value.trim();
 
-      this._config.players.white = whiteName || 'Player 1';
+      this._config.players.white = whiteName || I18n.t('defaultWhite');
       this._config.players.black = this._config.mode === 'machine'
-        ? 'Machine'
-        : (blackName || 'Player 2');
+        ? I18n.t('machine')
+        : (blackName || I18n.t('defaultBlack'));
       this._config.scores = { white: 0, black: 0 };
 
       sessionStorage.setItem(MenuController.STORAGE_KEY, JSON.stringify(this._config));
@@ -253,6 +247,56 @@ class MenuController {
         document.getElementById(btn.dataset.tab).classList.remove('hidden');
         this._setSidebarOpen(false);
       });
+    });
+  }
+
+  // ── Theme ────────────────────────────────────────────────────────────────
+
+  _initTheme() {
+    let saved = null;
+    try { saved = localStorage.getItem(MenuController.THEME_KEY); } catch (_) {}
+    this._applyTheme(saved === 'light');
+  }
+
+  _applyTheme(isLight) {
+    document.body.classList.toggle('light-mode', isLight);
+    try { localStorage.setItem(MenuController.THEME_KEY, isLight ? 'light' : 'dark'); } catch (_) {}
+    if (this._themeToggleEl) {
+      // Show the currently active theme on the toggle.
+      this._themeToggleEl.dataset.i18n = isLight ? 'themeLight' : 'themeDark';
+      this._themeToggleEl.textContent = I18n.t(isLight ? 'themeLight' : 'themeDark');
+    }
+  }
+
+  _bindThemeToggle() {
+    if (!this._themeToggleEl) return;
+    this._themeToggleEl.addEventListener('click', () => {
+      this._applyTheme(!document.body.classList.contains('light-mode'));
+    });
+  }
+
+  // ── Language ─────────────────────────────────────────────────────────────
+
+  _initLanguage() {
+    I18n.init();
+    I18n.apply();
+    if (this._langSelectEl) this._langSelectEl.value = I18n.current;
+  }
+
+  _bindLanguageSelect() {
+    if (!this._langSelectEl) return;
+    this._langSelectEl.addEventListener('change', () => {
+      I18n.setLang(this._langSelectEl.value);
+      this._updateRulesText();
+      // Re-render strings that aren't driven by data-i18n attributes.
+      if (this._themeToggleEl) {
+        this._themeToggleEl.textContent = I18n.t(this._themeToggleEl.dataset.i18n);
+      }
+      if (this._lastWinner && !this._winBannerEl.classList.contains('hidden')) {
+        const cfg = this.getStoredConfig();
+        const name = cfg && (this._lastWinner === 'white' ? cfg.players.white : cfg.players.black);
+        if (name) this._winTextEl.textContent = I18n.t('wins', { name });
+      }
     });
   }
 }

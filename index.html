@@ -2,7 +2,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'" />
 
     <!-- Primary Meta -->
     <title>Checkers — Classic Board Game</title>
@@ -35,52 +35,67 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar" aria-label="Game help">
       <div class="sidebar-brand">
-        <span class="brand-label">made by</span>
+        <span class="brand-label" data-i18n="madeBy">made by</span>
         <a class="brand-name" href="https://github.com/felipersteles" target="_blank">Teles</a>
       </div>
 
       <nav class="tabs">
-        <button class="tab active" data-tab="tips">Tips</button>
-        <button class="tab" data-tab="rules">Rules</button>
-        <button class="tab" data-tab="controls">Controls</button>
+        <button class="tab active" data-tab="tips" data-i18n="tabTips">Tips</button>
+        <button class="tab" data-tab="rules" data-i18n="tabRules">Rules</button>
+        <button class="tab" data-tab="controls" data-i18n="tabControls">Controls</button>
       </nav>
 
       <div class="tab-content" id="tips">
         <ul class="tip-list">
-          <li>Control the center of the board early on.</li>
-          <li>Keep your back row intact to prevent your opponent from getting kings.</li>
-          <li>Move in groups — lone pieces are easy targets.</li>
-          <li>Force your opponent into double jumps you can block.</li>
-          <li>Trade pieces when you're ahead; avoid trades when behind.</li>
-          <li>Green squares show where a selected piece can move.</li>
+          <li data-i18n="tip1">Control the center of the board early on.</li>
+          <li data-i18n="tip2">Keep your back row intact to prevent your opponent from getting kings.</li>
+          <li data-i18n="tip3">Move in groups — lone pieces are easy targets.</li>
+          <li data-i18n="tip4">Force your opponent into double jumps you can block.</li>
+          <li data-i18n="tip5">Trade pieces when you're ahead; avoid trades when behind.</li>
+          <li data-i18n="tip6">Green squares show where a selected piece can move.</li>
         </ul>
       </div>
 
       <div class="tab-content hidden" id="rules">
         <ul class="tip-list">
-          <li>Each player starts with 12 pieces on dark squares.</li>
+          <li data-i18n="rulePieces">Each player starts with 12 pieces on dark squares.</li>
           <li id="rule-start">White starts.</li>
-          <li>Pieces move diagonally forward one square at a time.</li>
-          <li>Captures are made by jumping over an enemy piece to an empty square.</li>
-          <li>Captures are mandatory when available.</li>
-          <li>Multiple captures in one turn are allowed and encouraged.</li>
+          <li data-i18n="ruleMove">Pieces move diagonally forward one square at a time.</li>
+          <li data-i18n="ruleCapture">Captures are made by jumping over an enemy piece to an empty square.</li>
+          <li data-i18n="ruleMandatory">Captures are mandatory when available.</li>
+          <li data-i18n="ruleMulti">Multiple captures in one turn are allowed and encouraged.</li>
           <li id="rule-men-kings">Men cannot capture Kings.</li>
           <li id="rule-capture-choice">When multiple captures are available, the longest capture is mandatory.</li>
-          <li>Reach the opponent's back row to become a <strong>King</strong>.</li>
-          <li>Kings can move and capture both forward and backward.</li>
-          <li>The player who captures all enemy pieces wins.</li>
-          <li>If a player has no moves left, the player with more pieces wins.</li>
+          <li data-i18n="ruleKing">Reach the opponent's back row to become a <strong>King</strong>.</li>
+          <li data-i18n="ruleKingMove">Kings can move and capture both forward and backward.</li>
+          <li data-i18n="ruleWinAll">The player who captures all enemy pieces wins.</li>
+          <li data-i18n="ruleNoMoves">If a player has no moves left, the player with more pieces wins.</li>
         </ul>
       </div>
 
       <div class="tab-content hidden" id="controls">
         <ul class="tip-list">
-          <li><kbd>Click</kbd> a piece to select it.</li>
-          <li>Green squares highlight valid moves.</li>
-          <li><kbd>Click</kbd> a green square to move there.</li>
-          <li>Turns alternate between White and Black.</li>
-          <li>Press <kbd>New Game</kbd> to reset the board.</li>
+          <li data-i18n="ctrl1"><kbd>Click</kbd> a piece to select it.</li>
+          <li data-i18n="ctrl2">Green squares highlight valid moves.</li>
+          <li data-i18n="ctrl3"><kbd>Click</kbd> a green square to move there.</li>
+          <li data-i18n="ctrl4">Turns alternate between White and Black.</li>
+          <li data-i18n="ctrl5">Press <kbd>New Game</kbd> to reset the board.</li>
         </ul>
+      </div>
+
+      <div class="sidebar-settings">
+        <div class="setting-row">
+          <span class="setting-label" data-i18n="theme">Theme</span>
+          <button class="setting-toggle" id="theme-toggle" data-i18n="themeDark">🌙 Dark</button>
+        </div>
+        <div class="setting-row">
+          <label class="setting-label" for="lang-select" data-i18n="language">Language</label>
+          <select class="setting-select" id="lang-select">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="pt">Português</option>
+          </select>
+        </div>
       </div>
     </aside>
 
@@ -90,52 +105,53 @@
       <!-- Menu screen -->
       <div id="menu">
         <div class="menu-header">
-          <h1 class="menu-title">Checkers</h1>
-          <p class="menu-subtitle">Choose a game mode to start</p>
+          <h1 class="menu-title" data-i18n="menuTitle">Checkers</h1>
+          <p class="menu-subtitle" data-i18n="menuSubtitle">Choose a game mode to start</p>
         </div>
 
         <div class="mode-cards">
           <button class="mode-card active" data-mode="multiplayer">
             <span class="mode-icon">👥</span>
-            <span class="mode-name">Two Players</span>
-            <span class="mode-desc">Local multiplayer</span>
+            <span class="mode-name" data-i18n="modeMultiName">Two Players</span>
+            <span class="mode-desc" data-i18n="modeMultiDesc">Local multiplayer</span>
           </button>
           <button class="mode-card" data-mode="machine">
             <span class="mode-icon">🤖</span>
-            <span class="mode-name">vs Machine</span>
-            <span class="mode-desc">Play against AI</span>
+            <span class="mode-name" data-i18n="modeMachineName">vs Machine</span>
+            <span class="mode-desc" data-i18n="modeMachineDesc">Play against AI</span>
           </button>
         </div>
 
         <div class="version-select">
-          <label>Version</label>
-          <div class="version-options">
-            <button class="version-btn active" data-version="italian">🇮🇹 Italian</button>
-            <button class="version-btn" data-version="english">🇬🇧 English</button>
-          </div>
+          <label for="version-select" data-i18n="versionLabel">Version</label>
+          <select id="version-select">
+            <option value="italian" data-i18n="verItalian">🇮🇹 Italian</option>
+            <option value="english" data-i18n="verEnglish">🇬🇧 English</option>
+            <option value="brazilian" data-i18n="verBrazilian">🇧🇷 Brazilian</option>
+          </select>
         </div>
 
         <div class="difficulty-select hidden" id="difficulty-group">
-          <label>Difficulty</label>
+          <label data-i18n="difficultyLabel">Difficulty</label>
           <div class="difficulty-options">
-            <button class="diff-btn" data-diff="easy">Easy</button>
-            <button class="diff-btn active" data-diff="medium">Medium</button>
-            <button class="diff-btn" data-diff="hard">Hard</button>
+            <button class="diff-btn" data-diff="easy" data-i18n="diffEasy">Easy</button>
+            <button class="diff-btn active" data-diff="medium" data-i18n="diffMedium">Medium</button>
+            <button class="diff-btn" data-diff="hard" data-i18n="diffHard">Hard</button>
           </div>
         </div>
 
         <div class="player-inputs">
           <div class="input-group">
-            <label for="player-white">White player</label>
-            <input type="text" id="player-white" placeholder="Player 1" maxlength="20" />
+            <label for="player-white" data-i18n="labelWhite">White player</label>
+            <input type="text" id="player-white" placeholder="Player 1" data-i18n-placeholder="phWhite" maxlength="20" />
           </div>
           <div class="input-group" id="black-player-group">
-            <label for="player-black">Black player</label>
-            <input type="text" id="player-black" placeholder="Player 2" maxlength="20" />
+            <label for="player-black" data-i18n="labelBlack">Black player</label>
+            <input type="text" id="player-black" placeholder="Player 2" data-i18n-placeholder="phBlack" maxlength="20" />
           </div>
         </div>
 
-        <button id="start-btn">Start Game</button>
+        <button id="start-btn" data-i18n="startBtn">Start Game</button>
       </div>
 
       <!-- Game container (hidden until menu is submitted) -->
@@ -149,8 +165,8 @@
             <span class="panel-name" id="name-white">Player 1</span>
             <span class="panel-score" id="score-white">0</span>
             <div class="turn-info">
-              <span class="turn-label">Your turn</span>
-              <button class="resign-btn" id="resign-white">Resign</button>
+              <span class="turn-label" data-i18n="turnLabel">Your turn</span>
+              <button class="resign-btn" id="resign-white" data-i18n="resign">Resign</button>
             </div>
           </div>
 
@@ -168,16 +184,16 @@
             <span class="panel-name" id="name-black">Player 2</span>
             <span class="panel-score" id="score-black">0</span>
             <div class="turn-info">
-              <span class="turn-label">Your turn</span>
-              <button class="resign-btn" id="resign-black">Resign</button>
+              <span class="turn-label" data-i18n="turnLabel">Your turn</span>
+              <button class="resign-btn" id="resign-black" data-i18n="resign">Resign</button>
             </div>
           </div>
 
         </div>
 
         <div class="game-actions">
-          <button id="back-btn">← Menu</button>
-          <button id="generate">New Game</button>
+          <button id="back-btn" data-i18n="backBtn">← Menu</button>
+          <button id="generate" data-i18n="newGame">New Game</button>
         </div>
 
       </div>

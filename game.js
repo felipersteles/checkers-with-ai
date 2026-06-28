@@ -104,42 +104,66 @@ class MoveEngine {
     const [px, py] = posAttr.split(',').map(Number);
     const pos = new Position(px, py);
     const color = isWhitePiece ? 'white' : 'black';
+    const flying = isQueenPiece && activeRules.flyingKings;
 
     const allDirs = [p => p.nw(), p => p.ne(), p => p.sw(), p => p.se()];
     const fwdDirs = isWhitePiece ? allDirs.slice(0, 2) : allDirs.slice(2, 4);
-    const dirs = isQueenPiece ? allDirs : fwdDirs;
+    const moveDirs = isQueenPiece ? allDirs : fwdDirs;
+    const captureDirs = (isQueenPiece || activeRules.menCaptureBackward) ? allDirs : fwdDirs;
 
-    dirs.forEach(step => {
-      const nPos = step(pos);
-      const nSq = MoveEngine._sq(nPos);
+    const addResult = m => {
+      if (!results.find(r => r.toSquare === m.toSquare && r.eatSquares.length === m.eatSquares.length))
+        results.push(m);
+    };
 
-      if (MoveEngine._empty(nSq) && !isChained) {
-        results.push(new Movement(nSq, []));
+    // Simple slides — flying kings glide over any run of empty squares.
+    if (!isChained) {
+      moveDirs.forEach(step => {
+        let nPos = step(pos);
+        let nSq = MoveEngine._sq(nPos);
+        if (flying) {
+          while (MoveEngine._empty(nSq)) {
+            results.push(new Movement(nSq, []));
+            nPos = step(nPos);
+            nSq = MoveEngine._sq(nPos);
+          }
+        } else if (MoveEngine._empty(nSq)) {
+          results.push(new Movement(nSq, []));
+        }
+      });
+    }
+
+    // Captures.
+    captureDirs.forEach(step => {
+      let nPos = step(pos);
+      let nSq = MoveEngine._sq(nPos);
+
+      // Flying kings skip empty squares until they reach the captured piece.
+      if (flying) {
+        while (MoveEngine._empty(nSq)) { nPos = step(nPos); nSq = MoveEngine._sq(nPos); }
       }
 
-      if (MoveEngine._canCapture(nSq, color, isQueenPiece, activeRules) && !eatChain.includes(nSq)) {
-        const jSq = MoveEngine._sq(step(nPos));
-        if (MoveEngine._empty(jSq)) {
-          const chain = [...eatChain, nSq];
-          const further = MoveEngine.forPiece(jSq, isWhitePiece, isQueenPiece, chain, true, activeRules);
-          const continued = further.filter(m => m.eatSquares.length > chain.length);
+      if (!MoveEngine._canCapture(nSq, color, isQueenPiece, activeRules) || eatChain.includes(nSq)) return;
 
-          if (continued.length) {
-            continued.forEach(m => {
-              if (!results.find(r => r.toSquare === m.toSquare && r.eatSquares.length === m.eatSquares.length))
-                results.push(m);
-            });
-            return;
-          }
+      // Candidate landing squares lie just beyond the captured piece; a flying
+      // king may stop on any empty square along the same diagonal.
+      let jPos = step(nPos);
+      let jSq = MoveEngine._sq(jPos);
+      while (MoveEngine._empty(jSq)) {
+        const chain = [...eatChain, nSq];
+        const further = MoveEngine.forPiece(jSq, isWhitePiece, isQueenPiece, chain, true, activeRules);
+        const continued = further.filter(m => m.eatSquares.length > chain.length);
 
-          if (!results.find(r => r.toSquare === jSq && r.eatSquares.length === chain.length)) {
-            results.push(new Movement(jSq, chain));
-          }
-          further.forEach(m => {
-            if (!results.find(r => r.toSquare === m.toSquare && r.eatSquares.length === m.eatSquares.length))
-              results.push(m);
-          });
+        if (continued.length) {
+          continued.forEach(addResult);
+        } else {
+          addResult(new Movement(jSq, chain));
+          further.forEach(addResult);
         }
+
+        if (!flying) break;
+        jPos = step(jPos);
+        jSq = MoveEngine._sq(jPos);
       }
     });
 
@@ -255,8 +279,12 @@ class CheckersGame {
 
       if (!isOwnPiece) {
         // Clicked enemy piece — only alert when nothing is selected
-        if (!this._selectedPiece)
-          alert(this.whiteTurn ? 'White turn.' : 'Black turn.');
+        if (!this._selectedPiece) {
+          const t = typeof I18n !== 'undefined'
+            ? I18n.t(this.whiteTurn ? 'whiteTurn' : 'blackTurn')
+            : (this.whiteTurn ? "White's turn." : "Black's turn.");
+          alert(t);
+        }
         return;
       }
 

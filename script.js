@@ -23,12 +23,24 @@ const CHECKERS_RULES = {
     whiteStarts: true,
     menCanCaptureKings: false,
     strictCapturePriority: true,
+    flyingKings: false,
+    menCaptureBackward: false,
   },
   english: {
     version: 'english',
     whiteStarts: false,
     menCanCaptureKings: true,
     strictCapturePriority: false,
+    flyingKings: false,
+    menCaptureBackward: false,
+  },
+  brazilian: {
+    version: 'brazilian',
+    whiteStarts: true,
+    menCanCaptureKings: true,
+    strictCapturePriority: true,
+    flyingKings: true,
+    menCaptureBackward: true,
   },
 };
 
@@ -122,6 +134,7 @@ function _loadScript(src) {
 }
 
 (async function boot() {
+  await _loadScript('i18n.js');
   await _loadScript('game.js');
   await _loadScript('machine.js');
   await _loadScript('menu.js');

@@ -113,33 +113,54 @@ class LogicalMoveEngine {
   static _collect(board, fromX, fromY, curX, curY, isQueen, color, eatChain, moves, inChain, rules = null) {
     const activeRules = LogicalMoveEngine._rules(rules);
     const opp = color === 'white' ? 'black' : 'white';
+    const flying = isQueen && activeRules.flyingKings;
     const fwdDirs = color === 'white'
       ? [LogicalMoveEngine._DIRS[0], LogicalMoveEngine._DIRS[1]]
       : [LogicalMoveEngine._DIRS[2], LogicalMoveEngine._DIRS[3]];
-    const dirs = isQueen ? LogicalMoveEngine._DIRS : fwdDirs;
+    const moveDirs = isQueen ? LogicalMoveEngine._DIRS : fwdDirs;
+    const captureDirs = (isQueen || activeRules.menCaptureBackward) ? LogicalMoveEngine._DIRS : fwdDirs;
 
-    dirs.forEach(step => {
-      const [nx, ny] = step(curX, curY);
+    // Simple slides — flying kings glide over any run of empty squares.
+    if (!inChain) {
+      moveDirs.forEach(step => {
+        let [nx, ny] = step(curX, curY);
+        while (LogicalMoveEngine._inBounds(nx, ny) && !board.get(nx, ny)) {
+          moves.push({ fromX, fromY, toX: nx, toY: ny, eatPositions: [] });
+          if (!flying) break;
+          [nx, ny] = step(nx, ny);
+        }
+      });
+    }
+
+    // Captures.
+    captureDirs.forEach(step => {
+      let [nx, ny] = step(curX, curY);
+
+      // Flying kings skip empty squares until they reach the captured piece.
+      if (flying) {
+        while (LogicalMoveEngine._inBounds(nx, ny) && !board.get(nx, ny)) [nx, ny] = step(nx, ny);
+      }
       if (!LogicalMoveEngine._inBounds(nx, ny)) return;
 
       const cell = board.get(nx, ny);
-      if (!cell && !inChain) {
-        moves.push({ fromX, fromY, toX: nx, toY: ny, eatPositions: [] });
-      }
-
       const alreadyEaten = eatChain.some(e => e.x === nx && e.y === ny);
-      if (LogicalMoveEngine._canCapture(cell, opp, isQueen, activeRules) && !alreadyEaten) {
-        const [jx, jy] = step(nx, ny);
-        if (LogicalMoveEngine._inBounds(jx, jy) && !board.get(jx, jy)) {
-          const chain = [...eatChain, { x: nx, y: ny }];
-          const before = moves.length;
-          LogicalMoveEngine._collect(board, fromX, fromY, jx, jy, isQueen, color, chain, moves, true, activeRules);
-          const hasContinuation = moves.slice(before).some(move => move.eatPositions.length > chain.length);
+      if (!LogicalMoveEngine._canCapture(cell, opp, isQueen, activeRules) || alreadyEaten) return;
 
-          if (!hasContinuation) {
-            moves.push({ fromX, fromY, toX: jx, toY: jy, eatPositions: chain });
-          }
+      // Candidate landing squares lie just beyond the captured piece; a flying
+      // king may stop on any empty square along the same diagonal.
+      let [jx, jy] = step(nx, ny);
+      while (LogicalMoveEngine._inBounds(jx, jy) && !board.get(jx, jy)) {
+        const chain = [...eatChain, { x: nx, y: ny }];
+        const before = moves.length;
+        LogicalMoveEngine._collect(board, fromX, fromY, jx, jy, isQueen, color, chain, moves, true, activeRules);
+        const hasContinuation = moves.slice(before).some(move => move.eatPositions.length > chain.length);
+
+        if (!hasContinuation) {
+          moves.push({ fromX, fromY, toX: jx, toY: jy, eatPositions: chain });
         }
+
+        if (!flying) break;
+        [jx, jy] = step(jx, jy);
       }
     });
   }
